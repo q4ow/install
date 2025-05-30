@@ -210,6 +210,16 @@ update_config_file() {
                 exit 1
             fi
             ;;
+        *fish)
+            local fish_config="$HOME/.config/fish/config.fish"
+            if [[ -w "$fish_config" ]]; then
+                log info "Updating $fish_config ..."
+                fish -c "echo 'source $SNOWBALL_INSTALL_DIR/env.sh' >> $fish_config"
+            else
+                log error "Cannot find a writable fish config file"
+                exit 1
+            fi
+            ;;
         *)
             log error "Unknown shell type $shell"
             exit 1
