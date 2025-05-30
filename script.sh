@@ -5,6 +5,16 @@ SNOWBALL_INSTALL_DIR=~/.snowball
 
 OS=$(uname -s | awk '{print tolower($0)}')
 ARCH=$(uname -m)
+case "$ARCH" in
+  x86_64)  ARCH=x86_64 ;;
+  aarch64) ARCH=arm64 ;;
+  *)       ;;
+esac
+
+SNOWBALL_VERSION=${SNOWBALL_VERSION:-0.0.1-beta}
+
+SNOWBALL_BUILD_ARCHIVE="snowball-${OS}-${ARCH}.tar.gz"
+DOWNLOAD_URL="https://github.com/snowball-lang/snowball/releases/download/${SNOWBALL_VERSION}/${SNOWBALL_BUILD_ARCHIVE}"
 
 if [[ "$LIB_FOLDER" == "" ]]; then
     LIB_FOLDER="/usr/local/lib"
@@ -13,9 +23,7 @@ fi
 YES="$1"
 
 if test -t 1; then
-
     ncolors=$(tput colors)
-
     if test -n "$ncolors" && test $ncolors -ge 8; then
         bold="$(tput bold)"
         underline="$(tput smul)"
@@ -89,9 +97,6 @@ if [ "$OS" != "linux" ] && [ "$OS" != "darwin" ]; then
   exit 1
 fi
 
-
-SNOWBALL_BUILD_ARCHIVE=snowball-$OS-$ARCH.tar.gz
-
 log info "Checking for non-existant previous snowball installations..."
 
 if [[ -d "$SNOWBALL_INSTALL_DIR" ]]; then
@@ -106,7 +111,7 @@ if [[ -d "$SNOWBALL_INSTALL_DIR" ]]; then
         log info "Removing previous installation..."
         rm -rf "$SNOWBALL_INSTALL_DIR"
         if [[ "$OSTYPE" == "darwin"* ]]; then
-            log info "Removing previus snowball installation"
+            log info "Removing previous snowball installation"
             rm -rf $SNOWBALL_INSTALL_DIR
         fi
     else
@@ -119,7 +124,9 @@ log info "Creating target directory: $SNOWBALL_INSTALL_DIR"
 mkdir -p $SNOWBALL_INSTALL_DIR
 
 cd $SNOWBALL_INSTALL_DIR
-x=$(curl -L https://github.com/snowball-lang/snowball/releases/latest/download/"$SNOWBALL_BUILD_ARCHIVE" | tar zxvf - )
+log info "Downloading ${SNOWBALL_BUILD_ARCHIVE} from $DOWNLOAD_URL"
+curl --fail -L "$DOWNLOAD_URL" | tar zxvf - \
+  || { log error "failed to fetch or unpack ${SNOWBALL_BUILD_ARCHIVE}"; exit 1; }
 
 mkdir bin
 mkdir lib
@@ -135,7 +142,6 @@ EXPORT_COMMAND="source $SNOWBALL_INSTALL_DIR/env.sh"
 log warn "Export command:"
 log warn "  $EXPORT_COMMAND"
 
-# function to check if a file exists and is writable
 check_file_writable() {
     local file="$1"
     if [[ -e "$file" ]]; then
@@ -150,7 +156,6 @@ check_file_writable() {
     fi
 }
 
-# function to add the command to the PATH in the config file
 add_command_to_path() {
     local config_file="$1"
     local env_command=". $SNOWBALL_INSTALL_DIR/env.sh"
@@ -177,7 +182,6 @@ add_command_to_path() {
     eval "$env_command"
 }
 
-# function to update the appropriate config file based on the shell
 update_config_file() {
     local shell="$1"
 
@@ -235,5 +239,5 @@ printf "    ${green}snowball-stdlib${normal} - standard library for snowball\n\n
 log info "Snowball successfully installed at: $(pwd)"
 log info "Snowball is ready to use! type: \`snowball --help\` to check that it works."
 printf "\n\t===================== GREAT! =====================\n\n"
-log info "Checkoutt the documentation at: https://snowball-lang.gitbook.io/docs/fundamentals/hello-world"
+log info "Checkout the documentation at: https://snowball-lang.gitbook.io/docs/fundamentals/hello-world"
 log info "Happy coding! 🐱"
